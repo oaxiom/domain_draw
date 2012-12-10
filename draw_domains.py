@@ -9,6 +9,7 @@ from optparse import OptionParser
 
 try:
     from data import *
+    import tools
 except Exception:
     print "Error: Can't find my own data file! data.py is missing"
     sys.exit(1)
@@ -116,6 +117,8 @@ class schematic:
             self.col_map = acast_col_map
         elif style == "unk_domains":
             self.col_map = unk_domains
+        elif style == "ptp":
+            self.col_map = ptp_map
             
         for n, item in enumerate(self.data):
             if style == "ubl":
@@ -126,6 +129,9 @@ class schematic:
                 self.draw(item, self.__draw_gen_style, thumbs)
             elif style == "unk_domains":
                 self.draw(item, self.__draw_unk_style, thumbs)
+            elif style == "ptp":
+                self.draw(item, self.__draw_ubl_style, thumbs)
+                
         return(None)
     
     def draw(self, item, draw_func, thumb=False):
@@ -227,21 +233,23 @@ class schematic:
                 elif d["db"] in domain_label_lookup and domain_label_lookup[d["db"]] in self.col_map: # This is where mixed domains will end up.
                     col = self.col_map[domain_label_lookup[d["db"]]]
                     label = domain_label_lookup[d["db"]]
+                elif d["name"] in self.col_map:
+                    col = self.col_map[d["name"]]
+                    label = d["name"]                    
                 else:
                     print "Warning: '%s' not found in colour map" % d["db"]
-                    print item
                     col = "pink"
                     label = d["db"]
                 
                 ax.add_patch(Rectangle((d["pos"][0], -p["evpad"]), d["pos"][1] - d["pos"][0], p["evpad"]*2, 
-                    ec="black", fc=col, lw=0.5, zorder=100000))
+                    ec="none", fc=col, lw=0.5, zorder=100000))
 
                 if not thumb: # numbers showing the aa position of the domain
                     ax.text(d["pos"][0]+p["pad2"], 0, str(d["pos"][0]+1), ha="left", va="center", fontsize=5, color="black", zorder=100001)
                     ax.text(d["pos"][1]-p["pad2"], 0, str(d["pos"][1]+1), ha="right", va="center", fontsize=5, color="black", zorder=100001)
             else:
                 ax.add_patch(Rectangle((d["pos"][0], -p["nvpad"]), d["pos"][1] - d["pos"][0], p["nvpad"]*2, 
-                    ec="black", fc="grey", lw=0.5, zorder=2))
+                    ec="none", fc="grey", lw=0.5, zorder=2))
 
             if not thumb:
                 if d["fam"] == "FAMILY-DEFINING":
@@ -284,6 +292,7 @@ class schematic:
         db it came from
         """
         for d in item["domains"]:
+            print d
             if d["name"] not in self.col_map:
                 print "Warning: '%s' not found in colour map" % d["name"]
             else:
@@ -322,7 +331,7 @@ class schematic:
         ax.text(0, 0.5, "%s (%s amino acids)" % (item["name"],  item["len"]), color="black", fontsize=20, ha="left")   
     
 if __name__ == "__main__":
-    parser = OptionParser()
+    parser = OptionParser() # Should be replaced with argparse
     parser.add_option("-i", 
         dest="filename", action="store",
         help="The input filename")
@@ -338,11 +347,18 @@ if __name__ == "__main__":
     parser.add_option("-v", "--svg",
         dest="svg", action="store_true", default=False,
         help="output 'full' figures as svg files")
+    parser.add_option("-c", "--collate", default=False,
+        dest="collate", action="store_true",
+        help="Scan the domain data and list the FAMILY-DEFINING domains")
 
     (options, args) = parser.parse_args()   
-        
-    t = schematic(options.filename, output_path=os.path.join(options.output_path, "full"), fixed=options.fixed, svg=options.svg)
-    t.draw_all(style=options.style, thumbs=False)
     
-    t = schematic(options.filename, output_path=os.path.join(options.output_path, "thumbs"))
-    t.draw_all(style=options.style, thumbs=True)
+    if options.collate:
+        # scan the file and collect all of the FAMILY-DEFINING categories.
+        tools.collate_family_defining(options.filename)
+    else:
+        t = schematic(options.filename, output_path=os.path.join(options.output_path, "full"), fixed=options.fixed, svg=options.svg)
+        t.draw_all(style=options.style, thumbs=False)
+        
+        t = schematic(options.filename, output_path=os.path.join(options.output_path, "thumbs"))
+        t.draw_all(style=options.style, thumbs=True)

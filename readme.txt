@@ -39,7 +39,7 @@ With a single FASTA entry per protein.
 License
 -------
 
-Copyright (C) 2009-2012 Andrew Hutchins
+Copyright (C) 2011-2012 Andrew Hutchins
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 

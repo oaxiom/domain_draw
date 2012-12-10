@@ -125,7 +125,21 @@ unk_domains = {
     "Ubiquitin-like": "#FF00B2",                       
     "UbiqConj_RWD": "#A60074", 
     "L1": "#FF9FE2"} 
-
+    
+ptp_map = {
+	'EYA': '#a6cee3',
+	'SSF52788': '#2078b4',
+	'SSF52799': '#afdd8a',
+	'Myotub-related': '#35a12e',
+	'Tyr_Pase_low_mol_wt': '#fa9897',
+	'Tyr_Pase_rcpt/non-rcpt': '#e31a1c',
+	'MPI_Phosphatase': '#fcbe6e',
+	'DUF370': '#fe7f01',
+	'Tyr_Pase_cat': '#c7afd4',
+	'Tyr_Pase_dual_specific': '#6c4099',
+	'Tyr_Pase_SIW14-like': '#fefd98',
+	}
+	
 """
 my @E2=('PF00179','SM00212');
 my @ZnF_A20= ('PF01754','SM00259' );
@@ -164,3 +178,4 @@ if __name__ == "__main__":
         "U box", "ZnF A20", "DDB1-like", "UCH", "USP", "MJD", "OTU", "JAMM",
         "Cullin", "VHL"]
     draw_key("ubl", ubl_col_map, ubl_order)
+    draw_key("ptp", ptp_map, ptp_map.keys())
