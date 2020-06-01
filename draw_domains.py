@@ -6,26 +6,47 @@ draw domain alignments
 
 import sys, os, gc
 from optparse import OptionParser
+import gzip as gzipfile
 
-from data import *
-import tools
+from .data import *
+from .tools import *
+from .adjustText import adjust_text
 
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 
-
 class schematic:
-    def __init__(self, filename, fixed=True, svg=False, output_path=None, **kargs):
+    def __init__(self, pdf=True, fixed=True):
+        """
+        **Purpose**
+            initiator
+
+        """
+        self.pdf = pdf
+        self.fixed = fixed
+        self.col_map = {}
+
+    def parse_file(self, domain_filename,
+        gzip=False,
+        fixed=True, pdf=False, output_path=None, **kargs):
         """
         **Purpose**
             Entry point for file parsing
 
         **Arguments**
-            filename
+            domain_filename
                 filename to parse.
+
+
+            format (Required),
+                Format: 'dfam'
+
+
+
+                Format: 'fasta_style'
                 Expected format:
                 >AGAP004733-PA  BTB
                     AGAP004733-PA   648     SSF54695        1       144     SSF54695        FAMILY-DEFINING
@@ -36,30 +57,62 @@ class schematic:
                     [List of domains]
                     <id>    <length of protein> <HMM ID>    <left>  <right> <name>  <type>
 
+            gzip (Optional, default=False)
+                Is the domain_filename gzipped?
+
             fixed (Optional, default=True)
                 draw all schemas with a fixed length.
                 IF set to False, the longest peptide will be scaled to the full widht
                 and everything else drawn in relation to that.
                 This is not guaranteed to give sensible results.
 
-            svg (Optional, default=False)
+            pdf (Optional, default=False)
+                Save image as a pdf
 
-            path
+            output_path (Optional, default=None)
                 path to export the files to.
                 Will be created if not present (Not guaranteed to work).
         """
+        valid_file_formats = set(['fasta_style', 'dfam'])
+        assert format in valid_file_formats, '{0} not in {1} valid_file_formats'.format(format, valid_file_formats)
+
         if output_path:
             if not os.path.exists(output_path):
                 os.mkdir(output_path)
             self.output_path = output_path
 
         self.fixed = fixed
-        self.svg = svg
-
-        oh = open(filename, "rU")
-        # files apear to be a bit like FASTA files, then tab separated elements
+        self.pdf = pdf
 
         self.data = []
+
+        if format == 'fasta_style':
+            self.data = self.__load_fasta_style(filename, gzip)
+        elif format == 'dfam':
+            self.data = self.__load_dfam_style(filename, gzip)
+
+    def __load_fasta_style(self, filename, gzip=False):
+        """
+
+
+        """
+        pass
+
+    def __load_fasta_style(self, filename, gzip=False):
+        '''
+                        Expected format:
+                >AGAP004733-PA  BTB
+                    AGAP004733-PA   648     SSF54695        1       144     SSF54695        FAMILY-DEFINING
+                    AGAP004733-PA   648     SM00355 481     503     Znf_C2H2        ACCESSORY
+                    AGAP004733-PA   648     SM00355 564     587     Znf_C2H2        ACCESSORY
+
+                ><name> <family_type>
+                    [List of domains]
+                    <id>    <length of protein> <HMM ID>    <left>  <right> <name>  <type>
+        '''
+        oh = open(filename, "rt")
+        # files apear to be a bit like FASTA files, then tab separated elements
+
         item = None
         types = []
 
@@ -94,6 +147,8 @@ class schematic:
         if item: # Make sure the last item gets added
             self.data.append(item)
 
+        oh.close()
+
     def draw_all(self, style="ubl", thumbs=False):
         """
         **Purpose**
@@ -127,7 +182,7 @@ class schematic:
 
         return(None)
 
-    def draw(self, item, draw_func, thumb=False):
+    def draw(self, item, filename, style, thumb=False):
         """
         **Purpose**
             draw the item.
@@ -144,10 +199,12 @@ class schematic:
         **Returns**
             None and a file in <item>.png
         """
-        if self.svg:
-            filename = "%s.svg" % item["name"]
-        else:
-            filename = "%s.png" % item["name"]
+        valid_styles = {'dudedb': self.__draw_ubl_style,
+            'ptp': self.__draw_ubl_style,
+            'episcan': self.__draw_gen_style,
+            }
+
+        assert style in valid_styles, '{0} style not in valid_styles ({1})'.format(style, valid_styles)
 
         if thumb:
             p = {"pad1": item["len"] * 0.02,
@@ -164,23 +221,23 @@ class schematic:
                     "lpad": 0.02, # vertical size of the central line
                     "evpad": 0.25, # vertical size of the 'normal' rectangle domain boxes.
                     "nvpad": 0.2,
-                    "titpos": "left",
-                    "titsize": 13} # vertical size of the 'enhanced' rectangle domain boxes.
+                    "titlepos": "left",
+                    "titlesize": 13} # vertical size of the 'enhanced' rectangle domain boxes.
             else: # ie fixed
                 p = {"pad1":  item["len"] * 0.02, # pad out 1% of the figure left and right
                     "pad2": item["len"] * 0.003,
-                    "figsize": (7, 1),
+                    "figsize": (7, 2),
                     "lpad": 0.02, # vertical size of the central line
-                    "evpad": 0.25, # vertical size of the 'normal' rectangle domain boxes.
+                    "evpad": 0.20, # vertical size of the 'normal' rectangle domain boxes.
                     "nvpad": 0.2,
-                    "titsize": 13} # vertical size of the 'enhanced' rectangle domain boxes.
+                    "titlesize": 13
+                    } # vertical size of the 'enhanced' rectangle domain boxes.
 
 
         fig = plt.figure(figsize=p["figsize"])
 
         ax = fig.add_subplot(111)
-        ax.set_position([0, 0, 1, 1])
-        ax.set_axis_bgcolor("white")
+        ax.set_position([0, 0.0, 1.0, 1.0])
 
         ax.add_patch(Rectangle((0,-p["lpad"]), item["len"]-1, p["lpad"]*2, ec="none", fc="black", color="black")) # The line for the protein
 
@@ -189,25 +246,20 @@ class schematic:
         else:
             ax.set_xlim([-p["pad1"], self.max_len+p["pad1"]])
 
-        ax.set_ylim([-1, 1])
+        ax.set_ylim([-3, 1])
 
-        if len(item["domains"]) > 0 :
-            draw_func(ax, item, p, thumb)
+        if len(item["domains"]) > 0:
+            valid_styles[style](ax, item, p, thumb)
 
-            # Add text labels
-            #if not thumb:
-            #    ax.text(0, 0.4, str(1), fontsize=8)
-            #    ax.text(item["len"], 0.4, str(item["len"]), fontsize=8, horizontalalignment="right")
+        #ax.set_xticklabels("")
+        #ax.set_yticklabels("")
+        #ax.set_ylabel("")
+        #ax.set_xlabel("")
+        #[item.set_markeredgewidth(0.0) for item in ax.xaxis.get_ticklines()]
+        #[item.set_markeredgewidth(0.0) for item in ax.yaxis.get_ticklines()]
+        #ax.set_frame_on(False)
 
-        ax.set_xticklabels("")
-        ax.set_yticklabels("")
-        ax.set_ylabel("")
-        ax.set_xlabel("")
-        [item.set_markeredgewidth(0.0) for item in ax.xaxis.get_ticklines()]
-        [item.set_markeredgewidth(0.0) for item in ax.yaxis.get_ticklines()]
-        ax.set_frame_on(False)
-
-        fig.savefig(os.path.join(self.output_path, filename))
+        fig.savefig(filename)
         plt.close(fig) # Free up the memory
 
     def __draw_ubl_style(self, ax, item, p, thumb=False):
@@ -256,7 +308,7 @@ class schematic:
             ax.text(l["p"], -0.5, l["lab"], ha="center", va="center", fontsize=l["fs"], color=l["col"])
 
         if not thumb: # the title
-            ax.text(item["len"]/2, 0.7, "%s (%s)" % (item["name"], item["type"]), color="black", fontsize=p["titsize"], ha="center")
+            ax.text(item["len"]/2, 0.7, "%s (%s)" % (item["name"], item["type"]), color="black", fontsize=p["titlesize"], ha="center")
 
     def __draw_db_style(self, ax, item, p, thumb=False):
         """
@@ -275,8 +327,12 @@ class schematic:
 
             ax.add_patch(Rectangle((d["pos"][0], -0.25), d["pos"][1] - d["pos"][0], 0.5,
                 ec="black", fc=self.col_map[type], lw=0.5))
-            ax.text((d["pos"][0] + d["pos"][1])/2, -0.5, str(d["name"]), ha="center", va="center", fontsize=6, color="black")
-        ax.text(item["len"]/2, 0.7, "ID: %s" % item["name"], color="black", fontsize=p["titsize"], ha="center")
+            t = ax.text((d["pos"][0] + d["pos"][1])/2, -0.5, str(d["name"]), ha="center", va="center", fontsize=6, color="black")
+            texts.append(t)
+
+        adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5))
+
+        ax.text(item["len"]/2, 0.7, "ID: {0}".format(item["name"]), color="black", fontsize=p["titlesize"], ha="center")
 
     def __draw_gen_style(self, ax, item, p, thumb=False):
         """
@@ -284,21 +340,24 @@ class schematic:
         This one colours the domain depending upon which
         db it came from
         """
-        for d in item["domains"]:
-            print(d)
-            if d["name"] not in self.col_map:
-                print("Warning: '%s' not found in colour map" % d["name"])
-            else:
-                ax.add_patch(Rectangle((d["pos"][0], -0.25), d["pos"][1] - d["pos"][0], 0.5,
-                    ec="none", fc=self.col_map[d["name"]], lw=0.5))
-            ax.text((d["pos"][0] + d["pos"][1])/2, -0.5, str(d["name"]), ha="center", va="center", fontsize=7, color="black")
-            ax.text((d["pos"][0] + d["pos"][1])/2, -0.7, str(d["db"]), ha="center", va="center", fontsize=6, color="black")
+        texts = []
 
-        if "titpos" in p:
-            if p["titpos"] == "left":
-                ax.text(0, 0.7, "%s" % item["name"], color="black", fontsize=p["titsize"], ha=p["titpos"])
-        #else:
-        #    ax.text(item["len"]/2, 0.7, "%s" % item["name"], color="black", fontsize=9, ha="center")
+        for d in item["domains"]:
+            ax.add_patch(Rectangle((
+                d["pos"][0], -0.25), d["pos"][1] - d["pos"][0], 0.5,
+                ec="none",
+                fc='grey', # self.col_map[d["name"]],
+                lw=0.5))
+
+            t = ax.text((d["pos"][0] + d["pos"][1])/2, -0.5, str(d["name"]), ha="center", va="center", fontsize=6, color="black")
+            texts.append(t)
+
+            if not thumb: # numbers showing the aa position of the domain
+                ax.text(d["pos"][0]+p["pad2"], 0, str(d["pos"][0]+1), ha="left", va="center", fontsize=5, color="black", zorder=100001)
+                ax.text(d["pos"][1]-p["pad2"], 0, str(d["pos"][1]+1), ha="right", va="center", fontsize=5, color="black", zorder=100001)
+
+        adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5))
+
 
     def __draw_unk_style(self, ax, item, p, thumb=False):
         """
@@ -314,9 +373,9 @@ class schematic:
                     ec="none", fc=self.col_map[d["name"]], lw=0.5))
 
             if a:
-                ax.text((d["pos"][0] + d["pos"][1])/2, -0.5, str(d["name"]), ha="center", va="center", fontsize=11, color="black")
+                ax.text((d["pos"][0] + d["pos"][1])/2, -0.5, str(d["name"]), ha="center", va="center", fontsize=6, color="black")
             else:
-                ax.text((d["pos"][0] + d["pos"][1])/2, -0.8, str(d["name"]), ha="center", va="center", fontsize=11, color="black")
+                ax.text((d["pos"][0] + d["pos"][1])/2, -0.8, str(d["name"]), ha="center", va="center", fontsize=6, color="black")
             a = not a
 
             #ax.text((d["pos"][0] + d["pos"][1])/2, -0.7, str(d["db"]), ha="center", va="center", fontsize=6, color="black")
@@ -348,7 +407,7 @@ if __name__ == "__main__":
 
     if options.collate:
         # scan the file and collect all of the FAMILY-DEFINING categories.
-        tools.collate_family_defining(options.filename)
+        collate_family_defining(options.filename)
     else:
         t = schematic(options.filename, output_path=os.path.join(options.output_path, "full"), fixed=options.fixed, svg=options.svg)
         t.draw_all(style=options.style, thumbs=False)
