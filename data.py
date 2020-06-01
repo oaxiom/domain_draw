@@ -41,7 +41,7 @@ ubl_col_map = {
     "Cullin": "#888888", # Structural-like?
     "VHL": "#444444"
     }
-  
+
 domain_label_lookup = { # Needs to match the name in the ubl_col_map, these are for mixed domains
     "PF10585": "E1",
     "PF00179": "E2",
@@ -78,54 +78,54 @@ domain_label_lookup = { # Needs to match the name in the ubl_col_map, these are 
     "PF00888": "Cullin",
     "PF01847": "VHL",
     "SSF49468": "VHL"
-    }  
-  
+    }
+
 acast_col_map = {"SUPERFAMILY": "grey",
-    "Pfam-A": "blue", 
+    "Pfam-A": "blue",
     "SMART": "red"
     }
 
 unk_domains = {
     # metabolic
-    "Decarboxylase2": "#FF0000",                      
-    "Caspase-like": "#BF3030", 
+    "Decarboxylase2": "#FF0000",
+    "Caspase-like": "#BF3030",
     "Hydrolase_Ploop": "#A60000",
     "ProtInh_I27": "#FF5858", # Calpain inhibitor
     # Transcriptional
-    "Krueppel": "#FFC300",                           
+    "Krueppel": "#FFC300",
     "TDP": "#BF9E30", # E2F
     "TF_DP": "#A67F00", # E2F
-    "HMG_family": "#FFD858", 
+    "HMG_family": "#FFD858",
     # Regulatory
-    "Mov34": "#6400FF",  # proteasomal, eIF3,              
-    "RNApol_subunit": "#6830BF", 
-    "HATdim": "#4100A6", 
+    "Mov34": "#6400FF",  # proteasomal, eIF3,
+    "RNApol_subunit": "#6830BF",
+    "HATdim": "#4100A6",
     "GBP": "#9A58FF", # IFng induced GTPase
     # Structural...
-    "GagP30": "#00A0FF", # Viral assembly protein! WTF?!   
+    "GagP30": "#00A0FF", # Viral assembly protein! WTF?!
     "ChlathrinAdaptor": "#0068A6", # Golgi protein
     "SteadinessBox": "#9FDBFF", # endosome/Lysosome sorter
-    # ZnFs. 
-    "ZnF_bba": "#cccccc",                               
-    "ZnF_retrovirus": "#999999", 
-    "ZnF_CCHC": "#666666", 
-    "ZnF_C2H2": "#333333", 
+    # ZnFs.
+    "ZnF_bba": "#cccccc",
+    "ZnF_retrovirus": "#999999",
+    "ZnF_CCHC": "#666666",
+    "ZnF_C2H2": "#333333",
     # Ribosomal
-    "RibProt_L14b": "#00FF00",                           
+    "RibProt_L14b": "#00FF00",
     "RibProt_S24e": "#30BF30",
     "RibProt_S4e": "#00A600",
     # Immunoglobulin C-type
-    "Imm_C1set": "#FF8700",                                
-    "Ig": "#FFD29F", 
+    "Imm_C1set": "#FF8700",
+    "Ig": "#FFD29F",
     # Unknowns
-    "DUF1725": "black",                               
-    "DUF1171": "black", 
-    "DUF3704": "black", 
+    "DUF1725": "black",
+    "DUF1171": "black",
+    "DUF3704": "black",
      # Ub-like
-    "Ubiquitin-like": "#FF00B2",                       
-    "UbiqConj_RWD": "#A60074", 
-    "L1": "#FF9FE2"} 
-    
+    "Ubiquitin-like": "#FF00B2",
+    "UbiqConj_RWD": "#A60074",
+    "L1": "#FF9FE2"}
+
 ptp_map = {
 	'EYA': '#a6cee3',
 	'SSF52788': '#2078b4',
@@ -139,7 +139,7 @@ ptp_map = {
 	'Tyr_Pase_dual_specific': '#6c4099',
 	'Tyr_Pase_SIW14-like': '#fefd98',
 	}
-	
+
 """
 my @E2=('PF00179','SM00212');
 my @ZnF_A20= ('PF01754','SM00259' );
@@ -160,17 +160,17 @@ def draw_key(name, colmap, order=None):
     ax = fig.add_subplot(111)
     ax.set_xlim([0, 20])
     ax.set_ylim([-len(colmap), 2])
-    
-    if not order: 
+
+    if not order:
         order = colmap
-    
+
     for i, k in enumerate(order):
-        ax.add_patch(Rectangle((2, -i), 6.8, 0.8, 
+        ax.add_patch(Rectangle((2, -i), 6.8, 0.8,
                         ec="none", fc=colmap[k], lw=0.5, zorder=2))
         ax.text(10, -(i-0.4), str(k), ha="left", va="center", fontsize=12, color="black")
     fig.savefig("%s_key.png" % name)
-    return(None)
-    
+    return None
+
 if __name__ == "__main__":
     import matplotlib.pylab as plot
     from matplotlib.patches import Rectangle
@@ -178,4 +178,4 @@ if __name__ == "__main__":
         "U box", "ZnF A20", "DDB1-like", "UCH", "USP", "MJD", "OTU", "JAMM",
         "Cullin", "VHL"]
     draw_key("ubl", ubl_col_map, ubl_order)
-    draw_key("ptp", ptp_map, ptp_map.keys())
+    draw_key("ptp", ptp_map, list(ptp_map.keys()))

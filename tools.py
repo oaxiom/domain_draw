@@ -17,18 +17,18 @@ def collate_family_defining(filename):
     
     set_of_doms = set(doms)
     for d in set_of_doms:
-        print "%s\t%s" % (doms.count(d), d)
+        print("%s\t%s" % (doms.count(d), d))
     
     cols = cm.Paired(numpy.arange(len(set_of_doms))/ (len(set_of_doms)*1.0))[:,:-1]
-    print cols
+    print(cols)
     
-    print cols
+    print(cols)
     
-    print
-    print "Suggested ColourMap:"
-    print "col_map = {"
+    print()
+    print("Suggested ColourMap:")
+    print("col_map = {")
     for i, d in enumerate(set_of_doms):
-        print "\t'%s': '%s'," % (d, '#%02x%02x%02x' % tuple(cols[i]*255))
-    print "\t}"
+        print("\t'%s': '%s'," % (d, '#%02x%02x%02x' % tuple(cols[i]*255)))
+    print("\t}")
     
     oh.close()
