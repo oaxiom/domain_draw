@@ -395,6 +395,7 @@ def adjust_text(texts, x=None, y=None, add_objects=None, ax=None,
     """
     if ax is None:
         ax = plt.gca()
+
     r = get_renderer(ax.get_figure())
     orig_xy = [get_text_position(text, ax=ax) for text in texts]
     orig_x = [xy[0] for xy in orig_xy]

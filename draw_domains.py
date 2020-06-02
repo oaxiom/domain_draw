@@ -4,7 +4,7 @@ draw domain alignments
 
 """
 
-import sys, os, gc
+import sys, os, gc, random
 from optparse import OptionParser
 import gzip as gzipfile
 
@@ -199,8 +199,9 @@ class schematic:
         **Returns**
             None and a file in <item>.png
         """
-        valid_styles = {'dudedb': self.__draw_ubl_style,
-            'ptp': self.__draw_ubl_style,
+        valid_styles = {
+            #'dudedb': self.__draw_ubl_style, # need revision
+            #'ptp': self.__draw_ubl_style, # need revision
             'episcan': self.__draw_gen_style,
             }
 
@@ -215,7 +216,7 @@ class schematic:
                 "nvpad": 0.4}
         else:
             if not self.fixed:
-                p = {"pad1": self.max_len * 0.01, # pad out 1% of the figure left and right
+                p = {"pad1": self.max_len * 0.035, # pad out 1% of the figure left and right
                     "pad2": self.max_len * 0.003,
                     "figsize": (25, 1),
                     "lpad": 0.02, # vertical size of the central line
@@ -224,9 +225,9 @@ class schematic:
                     "titlepos": "left",
                     "titlesize": 13} # vertical size of the 'enhanced' rectangle domain boxes.
             else: # ie fixed
-                p = {"pad1":  item["len"] * 0.02, # pad out 1% of the figure left and right
+                p = {"pad1":  item["len"] * 0.03, # pad out 1% of the figure left and right
                     "pad2": item["len"] * 0.003,
-                    "figsize": (7, 2),
+                    "figsize": (7, 1),
                     "lpad": 0.02, # vertical size of the central line
                     "evpad": 0.20, # vertical size of the 'normal' rectangle domain boxes.
                     "nvpad": 0.2,
@@ -236,28 +237,47 @@ class schematic:
 
         fig = plt.figure(figsize=p["figsize"])
 
-        ax = fig.add_subplot(111)
-        ax.set_position([0, 0.0, 1.0, 1.0])
+        ax = fig.add_subplot(211)
+        axlab = fig.add_subplot(212)
+
+        ax.set_position([0, 0.5, 1.0, 0.5])
+        axlab.set_position([0, 0.0, 1.0, 0.60])
 
         ax.add_patch(Rectangle((0,-p["lpad"]), item["len"]-1, p["lpad"]*2, ec="none", fc="black", color="black")) # The line for the protein
 
         if self.fixed:
             ax.set_xlim([-p["pad1"], item["len"]+p["pad1"]])
+            axlab.set_xlim([-p["pad1"], item["len"]+p["pad1"]])
         else:
             ax.set_xlim([-p["pad1"], self.max_len+p["pad1"]])
+            axlab.set_xlim([-p["pad1"], item["len"]+p["pad1"]])
 
-        ax.set_ylim([-3, 1])
+        ax.set_ylim([-1, 1])
+
+        axlab.set_ylim([0, 10])
+        axlab.set_facecolor('none')
 
         if len(item["domains"]) > 0:
-            valid_styles[style](ax, item, p, thumb)
+            valid_styles[style](ax, axlab, item, p, thumb)
 
-        #ax.set_xticklabels("")
-        #ax.set_yticklabels("")
-        #ax.set_ylabel("")
-        #ax.set_xlabel("")
-        #[item.set_markeredgewidth(0.0) for item in ax.xaxis.get_ticklines()]
-        #[item.set_markeredgewidth(0.0) for item in ax.yaxis.get_ticklines()]
-        #ax.set_frame_on(False)
+        if not thumb: # numbers showing the aa position of peptide
+            tpad = p['pad1']/10
+            ax.text(-tpad, 0, str(0), ha="right", va="center", fontsize=5, color="black", zorder=100001)
+            ax.text(item["len"]+tpad, 0, item['len'], ha="left", va="center", fontsize=5, color="black", zorder=100001)
+
+        ax.set_xticklabels("")
+        ax.set_yticklabels("")
+        ax.set_ylabel("")
+        ax.set_xlabel("")
+        ax.tick_params(left=None, top=None, bottom=None, right=None)
+        ax.set_frame_on(False)
+
+        axlab.set_xticklabels("")
+        axlab.set_yticklabels("")
+        axlab.set_ylabel("")
+        axlab.set_xlabel("")
+        axlab.tick_params(left=None, top=None, bottom=None, right=None)
+        axlab.set_frame_on(False)
 
         fig.savefig(filename)
         plt.close(fig) # Free up the memory
@@ -334,7 +354,7 @@ class schematic:
 
         ax.text(item["len"]/2, 0.7, "ID: {0}".format(item["name"]), color="black", fontsize=p["titlesize"], ha="center")
 
-    def __draw_gen_style(self, ax, item, p, thumb=False):
+    def __draw_gen_style(self, ax, axlab, item, p, thumb=False):
         """
         The most generic drawing style.
         This one colours the domain depending upon which
@@ -345,19 +365,29 @@ class schematic:
         for d in item["domains"]:
             ax.add_patch(Rectangle((
                 d["pos"][0], -0.25), d["pos"][1] - d["pos"][0], 0.5,
-                ec="none",
+                ec="lightgrey",
                 fc='grey', # self.col_map[d["name"]],
                 lw=0.5))
 
-            t = ax.text((d["pos"][0] + d["pos"][1])/2, -0.5, str(d["name"]), ha="center", va="center", fontsize=6, color="black")
-            texts.append(t)
+            if not thumb:
+                r = random.randint(0, 10) / 10 # Give adjust_text something to work with
+                t = axlab.text((d["pos"][0] + d["pos"][1])/2, 9-r, str(d["name"]), ha="center", va="center", fontsize=6, color="black")
+                texts.append(t)
 
             if not thumb: # numbers showing the aa position of the domain
-                ax.text(d["pos"][0]+p["pad2"], 0, str(d["pos"][0]+1), ha="left", va="center", fontsize=5, color="black", zorder=100001)
-                ax.text(d["pos"][1]-p["pad2"], 0, str(d["pos"][1]+1), ha="right", va="center", fontsize=5, color="black", zorder=100001)
+                ax.text(d["pos"][0]+p["pad2"], 0.4, str(d["pos"][0]+1), ha="center", va="center", fontsize=5, color="black", zorder=100001)
+                ax.text(d["pos"][1]-p["pad2"], 0.4, str(d["pos"][1]+1), ha="center", va="center", fontsize=5, color="black", zorder=100001)
 
-        adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5))
-
+        adjust_text(texts,
+            ax=axlab,
+            #arrowprops=dict(arrowstyle="-", color='k', lw=0.5),
+            only_move={'text': 'y'},
+            autoalign='y',
+            text_from_points=False,
+            force_text=0.2,
+            ha="center",
+            va="center"
+            )
 
     def __draw_unk_style(self, ax, item, p, thumb=False):
         """
